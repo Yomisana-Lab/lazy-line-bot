@@ -22,7 +22,7 @@ bot.on('message', function (event) {
 });
 
 // Bot所監聽的webhook路徑與port
-bot.listen(`/${process.envURL_ROOT}`, 3210, function () {
+bot.listen(`/${process.env.URL_ROOT}`, 3210, function () {
     console.log('[BOT已準備就緒]');
     console.log(`URL:https://${process.env.DOMAIN_NAME}/${process.env.URL_ROOT}`)
 });

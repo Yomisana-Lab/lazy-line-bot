@@ -14,7 +14,8 @@ Type=simple
 User=username
 
 # 啟動服務指令
-ExecStart=/usr/bin/node /home/username/lazy-line-bot/app.js
+WorkingDirectory=/home/username/lazy-line-bot
+ExecStart=node app.js
 
 # 不正常停止時重新啟動
 Restart=on-failure

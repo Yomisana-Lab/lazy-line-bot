@@ -1,0 +1,23 @@
+[Unit]
+After=network.target
+
+# 服務名稱
+Description=Lazy LINE Bot
+
+[Service]
+Type=simple
+
+# 設定環境變數
+#Environment=NODE_PORT=3001 NODE_ENV=production
+
+# 執行服務的使用者
+User=username
+
+# 啟動服務指令
+ExecStart=/usr/bin/node /home/username/lazy-line-bot/app.js
+
+# 不正常停止時重新啟動
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

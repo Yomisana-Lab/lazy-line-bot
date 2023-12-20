@@ -1,0 +1,15 @@
+{
+  "name": "lazy-line-bot",
+  "version": "1.0.0",
+  "description": "我真的好懶...竟然當上了就要有當上的手段囉 :P",
+  "main": "index.js",
+  "scripts": {
+    "run": "node index.js",
+    "yeet": "Create by my(yomisana) lazy"
+  },
+  "author": "Yomisana-Lab",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

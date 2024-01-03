@@ -16,7 +16,7 @@ const bot = linebot({
 // 當有人傳送訊息給Bot時
 bot.on('message', function (event) {
     // event.message.text是使用者傳給bot的訊息
-    // console.log(event); // 文字內容
+    console.log(event); // 文字內容
     // 準備要回傳的內容
     // console.log(event.message.text); // 文字內容
     // console.log(event.source.userId); // 使用者ID
@@ -33,7 +33,9 @@ bot.on('message', function (event) {
                     "Authorization": `Bearer ${process.env.LINE_NOTIFY_TOKEN}`,
                     "Content-Type": "application/x-www-form-urlencoded",
                 },
-                data: `message=\n${event.message.text}`,
+                data: {
+                    message: message,
+                },
             };
     
             axios(options)

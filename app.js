@@ -14,9 +14,25 @@ const bot = linebot({
   channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
 });
 
-function Loogger(...message) {
-  console.log(...message);
-  fs.appendFile("log.txt", message.join(" ") + "\n", function (err) {
+// function Logger(...message) {
+//   console.log(...message);
+//   fs.appendFile("log.txt", message.join(" ") + "\n", function (err) {
+//     if (err) {
+//       console.log(err);
+//     }
+//   });
+// }
+
+function Logger(...messages) {
+  const timestamp = new Date().toISOString().replace("T", " ").split(".")[0];
+  const formattedMessages = messages.map(
+    (message) => `[${timestamp}] ${message}`
+  );
+
+  console.log(...formattedMessages);
+
+  const logText = formattedMessages.join(" ") + "\n";
+  fs.appendFile("log.txt", logText, function (err) {
     if (err) {
       console.log(err);
     }
@@ -26,7 +42,7 @@ function Loogger(...message) {
 // 當有人傳送訊息給Bot時
 bot.on("message", function (event) {
   // event.message.text是使用者傳給bot的訊息
-  Loogger(event); // 文字內容
+  Logger(event); // 文字內容
   // 準備要回傳的內容
   // console.log(event.message.text); // 文字內容
   // console.log(event.source.userId); // 使用者ID
@@ -52,9 +68,9 @@ bot.on("message", function (event) {
       axios(axios_options)
         .then((response) => {
           if (response.status === 200) {
-            Loogger("Line Notify sent successfully!");
+            Logger("Line Notify sent successfully!");
           } else {
-            Loogger(
+            Logger(
               `Line Notify sent failed! not send message content: ${event.message.text}`
             );
             dchook.warning(
@@ -92,7 +108,7 @@ bot.on("message", function (event) {
 
 // Bot所監聽的webhook路徑與port
 bot.listen(`/${process.env.URL_ROOT}`, 3210, function () {
-  Loogger("[BOT已準備就緒]");
-  Loogger(`URL:https://${process.env.DOMAIN_NAME}/${process.env.URL_ROOT}`);
-  Loogger("[BOT已準備就緒]");
+  Logger("[BOT已準備就緒]");
+  Logger(`URL:https://${process.env.DOMAIN_NAME}/${process.env.URL_ROOT}`);
+  Logger("[BOT已準備就緒]");
 });

@@ -2,6 +2,7 @@
 const linebot = require("linebot");
 require("dotenv").config();
 
+const fs = require("fs-extra");
 const axios = require("axios");
 
 const { Webhook } = require("discord-webhook-node");
@@ -13,10 +14,19 @@ const bot = linebot({
   channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
 });
 
+function Loogger(...message) {
+  console.log(...message);
+  fs.appendFile("log.txt", message.join(" ") + "\n", function (err) {
+    if (err) {
+      console.log(err);
+    }
+  });
+}
+
 // 當有人傳送訊息給Bot時
 bot.on("message", function (event) {
   // event.message.text是使用者傳給bot的訊息
-  console.log(event); // 文字內容
+  Loogger(event); // 文字內容
   // 準備要回傳的內容
   // console.log(event.message.text); // 文字內容
   // console.log(event.source.userId); // 使用者ID
@@ -35,16 +45,16 @@ bot.on("message", function (event) {
           "Content-Type": "application/x-www-form-urlencoded",
         },
         data: {
-          message: message,
+          message: event.message.text,
         },
       };
 
       axios(axios_options)
         .then((response) => {
           if (response.status === 200) {
-            console.log("Line Notify sent successfully!");
+            Loogger("Line Notify sent successfully!");
           } else {
-            console.log(
+            Loogger(
               `Line Notify sent failed! not send message content: ${event.message.text}`
             );
             dchook.warning(
@@ -69,7 +79,7 @@ bot.on("message", function (event) {
         `遇到連過濾器都不能決定的可傳訊息 - 不是 Emily 傳送的 需要手動審查`,
         `<@${process.env.DISCORD_WEBHOOK_TAG_USER}> \n由: ${event.source.userId}\n 內文訊息: ${event.message.text}`
       );
-      return;
+      // return;
     }
   } else {
     dchook.warning(
@@ -82,7 +92,7 @@ bot.on("message", function (event) {
 
 // Bot所監聽的webhook路徑與port
 bot.listen(`/${process.env.URL_ROOT}`, 3210, function () {
-  console.log("[BOT已準備就緒]");
-  console.log(`URL:https://${process.env.DOMAIN_NAME}/${process.env.URL_ROOT}`);
-  console.log("[BOT已準備就緒]");
+  Loogger("[BOT已準備就緒]");
+  Loogger(`URL:https://${process.env.DOMAIN_NAME}/${process.env.URL_ROOT}`);
+  Loogger("[BOT已準備就緒]");
 });

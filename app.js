@@ -1,4 +1,5 @@
 // 引用linebot SDK
+const FormData = require("form-data");
 const linebot = require("linebot");
 require("dotenv").config();
 
@@ -13,15 +14,6 @@ const bot = linebot({
   channelSecret: process.env.CHANNEL_SECRET,
   channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
 });
-
-// function Logger(...message) {
-//   console.log(...message);
-//   fs.appendFile("log.txt", message.join(" ") + "\n", function (err) {
-//     if (err) {
-//       console.log(err);
-//     }
-//   });
-// }
 
 function Logger(...messages) {
   const timestamp = new Date().toISOString().replace("T", " ").split(".")[0];
@@ -39,6 +31,8 @@ function Logger(...messages) {
   });
 }
 
+var sendTimestamp = 0;
+
 // 當有人傳送訊息給Bot時
 bot.on("message", function (event) {
   // event.message.text是使用者傳給bot的訊息
@@ -46,9 +40,11 @@ bot.on("message", function (event) {
   // 準備要回傳的內容
   // console.log(event.message.text); // 文字內容
   // console.log(event.source.userId); // 使用者ID
-  const pattern = /^(?=.*班長|班代)(?!大一|大二|大四|二技)[\s\S]*$/;
-  if (pattern.test(event.message.text)) {
+  // const pattern = /^(?=.*班長|班代)(?!大一|大二|大四|二技)[\s\S]*$/;
+  if (matchPattern(event.message.text)) {
     // console.log("字串符合模式");
+    // if (event.source.userId == process.env.LINE_TARGET_USER_ID) {
+    // 暫時用不到 "LINE_TARGET_USER_ID"
     if (event.source.userId == process.env.LINE_TARGET_USER_ID) {
       // 正式版本
       // 在這裡處理 userId 符合條件的情況
@@ -65,6 +61,8 @@ bot.on("message", function (event) {
         },
       };
 
+      sendTimestamp = event.timestamp;
+
       axios(axios_options)
         .then((response) => {
           if (response.status === 200) {
@@ -75,17 +73,17 @@ bot.on("message", function (event) {
             );
             dchook.warning(
               `**班代群組訊息沒有傳送**`,
-              `傳送失敗 - 不可逆原因沒有傳送成功!`,
+              `傳送失敗 - 不可逆原因沒有傳送成功-2`,
               `<@${process.env.DISCORD_WEBHOOK_TAG_USER}> \n由: ${event.source.userId}\n 內文訊息: ${event.message.text}`
             );
           }
         })
         .catch((error) => {
-          console.error(error);
+          Logger(error.stack);
           dchook.warning(
             `**班代群組訊息沒有傳送**`,
-            `傳送失敗 - 不可逆原因沒有傳送成功!`,
-            `<@${process.env.DISCORD_WEBHOOK_TAG_USER}> \n由: ${event.source.userId}\n 內文訊息: ${event.message.text}`
+            `傳送失敗 - 不可逆原因沒有傳送成功-1`,
+            `<@${process.env.DISCORD_WEBHOOK_TAG_USER}> \n由: ${event.source.userId}\n 內文訊息: ${event.message.text}\n${error}\n${error.stack}`
           );
         });
     } else {
@@ -97,9 +95,68 @@ bot.on("message", function (event) {
       );
       // return;
     }
+  } else if (
+    event.message.type === "image" &&
+    sendTimestamp + 60 * 1000 > event.timestamp &&
+    event.source.userId == process.env.LINE_TARGET_USER_ID
+  ) {
+    // console.log("圖片訊息");
+    Logger("圖片訊息");
+    // console.log(event.message);
+    // console.log(event.message.contentProvider.originalContentUrl;
+    getImages(event.message.id).then((res) => {
+      Logger("res");
+      try {
+        const form = new FormData();
+        const file = fs.createReadStream("out.jpeg");
+        form.append("imageFile", file);
+        form.append("message", "out.jpeg"); // :??
+        const axios_options = {
+          method: "post",
+          url: "https://notify-api.line.me/api/notify",
+          headers: {
+            Authorization: `Bearer ${process.env.LINE_NOTIFY_TOKEN}`,
+            "Content-Type": "multipart/form-data",
+          },
+          data: form,
+        };
+
+        axios(axios_options)
+          .then((response) => {
+            if (response.status === 200) {
+              Logger("Line Notify sent successfully!");
+            } else {
+              Logger(
+                `Line Notify sent failed! not send message content: ${event.message.text}`
+              );
+              dchook.warning(
+                `**班代群組訊息沒有傳送 IMAGE**`,
+                `傳送失敗 - 不可逆原因沒有傳送成功!`,
+                `<@${process.env.DISCORD_WEBHOOK_TAG_USER}> \n由: ${event.source.userId}\n 內文訊息: ${event.message.text}`
+              );
+            }
+          })
+          .catch((error) => {
+            console.error(error);
+            dchook.warning(
+              `**班代群組訊息沒有傳送 IMAGE**`,
+              `傳送失敗 - 不可逆原因沒有傳送成功!`,
+              `<@${process.env.DISCORD_WEBHOOK_TAG_USER}> \n由: ${event.source.userId}\n 內文訊息: ${event.message.text}`
+            );
+          });
+      } catch (error) {
+        console.error(error);
+        dchook.warning(
+          `**班代群組訊息沒有傳送 IMAGE CATRY ERRO**`,
+          `遇到連過濾器都不能決定的可傳訊息 - pattern.test(event.message.text) 被刷掉的`,
+          `<@${process.env.DISCORD_WEBHOOK_TAG_USER}> \n由: ${event.source.userId}\n 內文訊息: ${event.message.text}\n${error}\n${error.stack}`
+        );
+      }
+    });
   } else {
+    sendTimestamp = 0;
     dchook.warning(
-      `**班代群組訊息沒有傳送**`,
+      `**班代群組訊息沒有傳送 IMAGE**`,
       `遇到連過濾器都不能決定的可傳訊息 - pattern.test(event.message.text) 被刷掉的`,
       `<@${process.env.DISCORD_WEBHOOK_TAG_USER}> \n由: ${event.source.userId}\n 內文訊息: ${event.message.text}`
     );
@@ -107,8 +164,50 @@ bot.on("message", function (event) {
 });
 
 // Bot所監聽的webhook路徑與port
-bot.listen(`/${process.env.URL_ROOT}`, 3210, function () {
+bot.listen(`/${process.env.URL_ROOT}`, process.env.URL_PORT, function () {
   Logger("[BOT已準備就緒]");
   Logger(`URL:https://${process.env.DOMAIN_NAME}/${process.env.URL_ROOT}`);
   Logger("[BOT已準備就緒]");
 });
+
+function getImages(messageId) {
+  return new Promise((resolve) => {
+    const axios_options = {
+      method: "get",
+      url: `https://api-data.line.me/v2/bot/message/${messageId}/content`,
+      responseType: "stream",
+      headers: {
+        Authorization: `Bearer ${process.env.CHANNEL_ACCESS_TOKEN}`,
+      },
+    };
+
+    axios(axios_options).then((response) => {
+      if (response.status === 200) {
+        var stream = response.data.pipe(fs.createWriteStream("out.jpeg"));
+        stream.on("finish", function () {
+          Logger("stream end");
+          stream.end();
+          setTimeout(() => {
+            resolve(true);
+          }, 1000);
+        });
+      } else {
+        resolve(null);
+      }
+    });
+  });
+}
+
+function matchPattern(text) {
+  if (text.match(/^(?=.*班長|班代)[\s\S]*$/)) {
+    if (text.match(/(大三)/gi)) {
+      return true;
+    } else if (text.match(/(大一|大二|大四|二技)/gi)) {
+      return false;
+    } else {
+      return true;
+    }
+  } else {
+    return false;
+  }
+}
